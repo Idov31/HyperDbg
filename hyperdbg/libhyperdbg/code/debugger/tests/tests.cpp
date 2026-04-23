@@ -72,7 +72,7 @@ SetupTestName(_Inout_updates_bytes_all_(BufferLength) PCHAR TestLocation,
     }
 
     //
-    // Insure test file is in the specified directory
+    // Ensure the test file is in the specified directory.
     //
     if ((fileHandle = CreateFile(TestLocation, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL)) ==
         INVALID_HANDLE_VALUE)

@@ -153,7 +153,7 @@ ManageDriver(LPCTSTR DriverName, LPCTSTR ServiceName, UINT16 Function)
     BOOLEAN   Res = TRUE;
 
     //
-    // Insure (somewhat) that the driver and service names are valid
+    // Ensure (somewhat) that the driver and service names are valid.
     //
     if (!DriverName || (Function == DRIVER_FUNC_INSTALL && !ServiceName))
     {
