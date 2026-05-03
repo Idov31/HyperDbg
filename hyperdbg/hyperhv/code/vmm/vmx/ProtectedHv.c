@@ -286,7 +286,9 @@ ProtectedHvExternalInterruptExitingForDisablingInterruptCommands(VIRTUAL_MACHINE
 VOID
 ProtectedHvSetTscVmexit(VIRTUAL_MACHINE_STATE * VCpu, BOOLEAN Set, PROTECTED_HV_RESOURCES_PASSING_OVERS PassOver)
 {
-    UINT32 CpuBasedVmExecControls = 0;
+    UINT32 CpuBasedVmExecControls              = 0;
+    UINT32 SecondaryProcBasedVmExecControls    = 0;
+    UINT32 AdjustedSecondaryVmExecControls     = 0;
 
     //
     // The protected checks are only performed if the "Set" is "FALSE",
@@ -311,19 +313,26 @@ ProtectedHvSetTscVmexit(VIRTUAL_MACHINE_STATE * VCpu, BOOLEAN Set, PROTECTED_HV_
     // Read the previous flags
     //
     VmxVmread32P(VMCS_CTRL_PROCESSOR_BASED_VM_EXECUTION_CONTROLS, &CpuBasedVmExecControls);
+    VmxVmread32P(VMCS_CTRL_SECONDARY_PROCESSOR_BASED_VM_EXECUTION_CONTROLS, &SecondaryProcBasedVmExecControls);
 
     if (Set)
     {
         CpuBasedVmExecControls |= IA32_VMX_PROCBASED_CTLS_RDTSC_EXITING_FLAG;
+        SecondaryProcBasedVmExecControls |= IA32_VMX_PROCBASED_CTLS2_ENABLE_USER_WAIT_PAUSE_FLAG;
     }
     else
     {
         CpuBasedVmExecControls &= ~IA32_VMX_PROCBASED_CTLS_RDTSC_EXITING_FLAG;
+        SecondaryProcBasedVmExecControls &= ~IA32_VMX_PROCBASED_CTLS2_ENABLE_USER_WAIT_PAUSE_FLAG;
     }
+
+    AdjustedSecondaryVmExecControls = HvAdjustControls(SecondaryProcBasedVmExecControls, IA32_VMX_PROCBASED_CTLS2);
+
     //
-    // Set the new value
+    // Set the new values
     //
     VmxVmwrite64(VMCS_CTRL_PROCESSOR_BASED_VM_EXECUTION_CONTROLS, CpuBasedVmExecControls);
+    VmxVmwrite64(VMCS_CTRL_SECONDARY_PROCESSOR_BASED_VM_EXECUTION_CONTROLS, AdjustedSecondaryVmExecControls);
 }
 
 /**
