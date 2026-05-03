@@ -121,12 +121,21 @@ VmxVmexitHandler(_Inout_ PGUEST_REGS GuestRegs)
     case VMX_EXIT_REASON_EXECUTE_INVEPT:
     case VMX_EXIT_REASON_EXECUTE_INVVPID:
     case VMX_EXIT_REASON_EXECUTE_GETSEC:
-    case VMX_EXIT_REASON_EXECUTE_INVD:
     {
         //
         // Handle unconditional vm-exits (inject #ud)
         //
         EventInjectUndefinedOpcode(VCpu);
+
+        break;
+    }
+    case VMX_EXIT_REASON_EXECUTE_INVD:
+    {
+        //
+        // INVD causes VM-exit unconditionally. Use WBINVD to preserve cache
+        // coherency while completing the guest instruction.
+        //
+        __wbinvd();
 
         break;
     }
@@ -310,6 +319,16 @@ VmxVmexitHandler(_Inout_ PGUEST_REGS GuestRegs)
         //
         DispatchEventXsetbv(VCpu);
 
+        break;
+    }
+    case VMX_EXIT_REASON_EXECUTE_UMWAIT:
+    case VMX_EXIT_REASON_EXECUTE_TPAUSE:
+    {
+        //
+        // These exits occur only when enable user wait and pause and RDTSC
+        // exiting are both set. Completing them as no-ops avoids noisy unknown
+        // VM-exits while preserving forward progress.
+        //
         break;
     }
     case VMX_EXIT_REASON_VMX_PREEMPTION_TIMER_EXPIRED:
