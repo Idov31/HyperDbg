@@ -887,12 +887,15 @@ VmxSetupVmcs(VIRTUAL_MACHINE_STATE * VCpu, PVOID GuestStack)
                  VmxBasicMsr.VmxControls ? "IA32_VMX_TRUE_PROCBASED_CTLS" : "IA32_VMX_PROCBASED_CTLS",
                  CpuBasedVmExecControls);
 
+    //
+    // Keep XSAVES/XRSTORS and user wait/pause disabled until their VM-entry
+    // dependencies are validated. VPID is also temporarily disabled while
+    // VM-entry control validation is being narrowed down.
+    //
     SecondaryProcBasedVmExecControls = HvAdjustControls(
         IA32_VMX_PROCBASED_CTLS2_ENABLE_RDTSCP_FLAG |
             IA32_VMX_PROCBASED_CTLS2_ENABLE_EPT_FLAG |
-            IA32_VMX_PROCBASED_CTLS2_ENABLE_INVPCID_FLAG |
-            IA32_VMX_PROCBASED_CTLS2_ENABLE_XSAVES_FLAG |
-            IA32_VMX_PROCBASED_CTLS2_ENABLE_VPID_FLAG,
+            IA32_VMX_PROCBASED_CTLS2_ENABLE_INVPCID_FLAG,
         IA32_VMX_PROCBASED_CTLS2);
 
     VmxVmwrite64(VMCS_CTRL_SECONDARY_PROCESSOR_BASED_VM_EXECUTION_CONTROLS, SecondaryProcBasedVmExecControls);
@@ -906,14 +909,12 @@ VmxSetupVmcs(VIRTUAL_MACHINE_STATE * VCpu, PVOID GuestStack)
 
     VmxVmwrite64(VMCS_CTRL_PRIMARY_VMEXIT_CONTROLS,
                  HvAdjustControls(
-                     IA32_VMX_EXIT_CTLS_HOST_ADDRESS_SPACE_SIZE_FLAG |
-                         IA32_VMX_EXIT_CTLS_LOAD_IA32_CET_STATE_FLAG,
+                     IA32_VMX_EXIT_CTLS_HOST_ADDRESS_SPACE_SIZE_FLAG,
                      VmxBasicMsr.VmxControls ? IA32_VMX_TRUE_EXIT_CTLS : IA32_VMX_EXIT_CTLS));
 
     VmxVmwrite64(VMCS_CTRL_VMENTRY_CONTROLS,
                  HvAdjustControls(
-                     IA32_VMX_ENTRY_CTLS_IA32E_MODE_GUEST_FLAG |
-                         IA32_VMX_ENTRY_CTLS_LOAD_CET_STATE_FLAG,
+                     IA32_VMX_ENTRY_CTLS_IA32E_MODE_GUEST_FLAG,
                      VmxBasicMsr.VmxControls ? IA32_VMX_TRUE_ENTRY_CTLS : IA32_VMX_ENTRY_CTLS));
 
     VmxVmwrite64(VMCS_CTRL_CR0_GUEST_HOST_MASK, 0);
@@ -1000,13 +1001,10 @@ VmxSetupVmcs(VIRTUAL_MACHINE_STATE * VCpu, PVOID GuestStack)
     VmxVmwrite64(VMCS_CTRL_EPT_POINTER, VCpu->EptPointer.AsUInt);
 
     //
-    // Set up VPID
-
+    // VPID is temporarily disabled while VM-entry control validation is being
+    // narrowed down. Keep the VPID field zero because the enable-VPID control is clear.
     //
-    // For all processors, we will use a VPID = 1. This allows the processor to separate caching
-    //  of EPT structures away from the regular OS page translation tables in the TLB.
-    //
-    VmxVmwrite64(VIRTUAL_PROCESSOR_ID, VPID_TAG);
+    VmxVmwrite64(VIRTUAL_PROCESSOR_ID, 0);
 
     //
     // setup guest rsp

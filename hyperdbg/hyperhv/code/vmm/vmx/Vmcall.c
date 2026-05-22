@@ -23,42 +23,30 @@ _Use_decl_annotations_
 NTSTATUS
 VmxHypervVmcallHandler(VIRTUAL_MACHINE_STATE * VCpu, PGUEST_REGS GuestRegs)
 {
-    UINT64                GuestRsp   = NULL64_ZERO;
-    HYPERCALL_INPUT_VALUE InputValue = {.Flags = GuestRegs->rcx};
+    HYPERCALL_INPUT_VALUE InputValue                  = {.Flags = GuestRegs->rcx};
+    BOOLEAN               RequiresLocalTlbInvalidation = FALSE;
 
-    switch (InputValue.Fields.CallCode)
+    RequiresLocalTlbInvalidation =
+        InputValue.Fields.CallCode == HvSwitchVirtualAddressSpace ||
+        InputValue.Fields.CallCode == HvFlushVirtualAddressSpace ||
+        InputValue.Fields.CallCode == HvFlushVirtualAddressList ||
+        InputValue.Fields.CallCode == HvCallFlushVirtualAddressSpaceEx ||
+        InputValue.Fields.CallCode == HvCallFlushVirtualAddressListEx ||
+        InputValue.Fields.CallCode == HvCallFlushGuestPhysicalAddressSpace ||
+        InputValue.Fields.CallCode == HvCallFlushGuestPhysicalAddressList;
+
+    //
+    // Let the top-level hypervisor manage the hypercall. TLFS marks RAX,
+    // RCX, RDX, R8, and XMM0-XMM5 as volatile/output for hypercalls; the
+    // assembly thunk updates only those guest-visible fields.
+    //
+    AsmHypervVmcall((UINT64)GuestRegs, (UINT64)VCpu->XmmRegs);
+
+    if (RequiresLocalTlbInvalidation)
     {
-    case HvSwitchVirtualAddressSpace:
-    case HvFlushVirtualAddressSpace:
-    case HvFlushVirtualAddressList:
-    case HvCallFlushVirtualAddressSpaceEx:
-    case HvCallFlushVirtualAddressListEx:
-
-        VpidInvvpidAllContext();
-        break;
-
-    case HvCallFlushGuestPhysicalAddressSpace:
-    case HvCallFlushGuestPhysicalAddressList:
-
         EptInveptSingleContext(VCpu->EptPointer.AsUInt);
-        break;
+        VpidInvvpidAllContext();
     }
-
-    //
-    // Save the guest rsp as it will be modified during the Hyper-V's
-    // VMCALL process
-    //
-    GuestRsp = GuestRegs->rsp;
-
-    //
-    // Let the top-level hypervisor to manage it
-    //
-    AsmHypervVmcall((UINT64)GuestRegs);
-
-    //
-    // Restore the guest's RSP
-    //
-    GuestRegs->rsp = GuestRsp;
 
     return STATUS_SUCCESS;
 }

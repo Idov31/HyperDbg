@@ -187,6 +187,9 @@ enum hv_isolation_type
 /* MSR used to retrieve the local APIC timer frequency */
 #define HV_X64_MSR_APIC_FREQUENCY 0x40000023
 
+/* MSR used to configure the nested posted interrupt event proxy */
+#define HV_X64_MSR_NPIEP_CONFIG 0x40000040
+
 /* Define the virtual APIC registers */
 #define HV_X64_MSR_EOI            0x40000070
 #define HV_X64_MSR_ICR            0x40000071
@@ -244,8 +247,19 @@ enum hv_isolation_type
 #define HV_X64_MSR_TSC_EMULATION_CONTROL   0x40000107
 #define HV_X64_MSR_TSC_EMULATION_STATUS    0x40000108
 
+/* Synthetic time-unhalted timer MSRs */
+#define HV_X64_MSR_STIME_UNHALTED_TIMER_CONFIG 0x40000114
+#define HV_X64_MSR_STIME_UNHALTED_TIMER_COUNT  0x40000115
+
 /* TSC invariant control */
 #define HV_X64_MSR_TSC_INVARIANT_CONTROL 0x40000118
+
+/* Nested synthetic MSRs */
+#define HV_X64_MSR_NESTED_VP_INDEX  0x40001002
+#define HV_X64_MSR_NESTED_SCONTROL  0x40001080
+#define HV_X64_MSR_NESTED_EOM       0x40001084
+#define HV_X64_MSR_NESTED_SINT0     0x40001090
+#define HV_X64_MSR_NESTED_SINT15    0x4000109F
 
 /* Register name aliases for temporary compatibility */
 #define HV_X64_MSR_STIMER0_COUNT  HV_REGISTER_STIMER0_COUNT

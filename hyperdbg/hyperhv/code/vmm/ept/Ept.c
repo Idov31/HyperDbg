@@ -853,14 +853,16 @@ EptAllocateAndCreateIdentityPageTable(VOID)
 BOOLEAN
 EptLogicalProcessorInitialize(VOID)
 {
-    ULONG               ProcessorsCount;
-    PVMM_EPT_PAGE_TABLE PageTable;
-    EPT_POINTER         EPTP = {0};
+    ULONG                           ProcessorsCount;
+    PVMM_EPT_PAGE_TABLE             PageTable;
+    EPT_POINTER                     EPTP       = {0};
+    IA32_VMX_EPT_VPID_CAP_REGISTER EptVpidCap = {0};
 
     //
     // Get number of processors
     //
     ProcessorsCount = KeQueryActiveProcessorCount(0);
+    EptVpidCap.AsUInt = __readmsr(IA32_VMX_EPT_VPID_CAP);
 
     for (size_t i = 0; i < ProcessorsCount; i++)
     {
@@ -893,14 +895,15 @@ EptLogicalProcessorInitialize(VOID)
         g_GuestState[i].EptPageTable = PageTable;
 
         //
-        // Use default memory type
+        // EPTP memory type describes the EPT paging structures themselves.
+        // Use write-back because EptCheckFeatures verifies WB EPTP support.
         //
-        EPTP.MemoryType = g_EptState->DefaultMemoryType;
+        EPTP.MemoryType = MEMORY_TYPE_WRITE_BACK;
 
         //
         // We might utilize the 'access' and 'dirty' flag features in the dirty logging mechanism
         //
-        EPTP.EnableAccessAndDirtyFlags = TRUE;
+        EPTP.EnableAccessAndDirtyFlags = EptVpidCap.EptAccessedAndDirtyFlags ? TRUE : FALSE;
 
         //
         // Bits 5:3 (1 less than the EPT page-walk length) must be 3, indicating an EPT page-walk length of 4;

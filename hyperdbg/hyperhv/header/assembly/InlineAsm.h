@@ -46,9 +46,10 @@ extern NTSTATUS inline AsmVmxVmcall(unsigned long long VmcallNumber,
  * @brief Hyper-v vmcall handler
  *
  * @param GuestRegisters
+ * @param GuestXmmRegisters
  * @return void
  */
-extern void inline AsmHypervVmcall(unsigned long long GuestRegisters);
+extern void inline AsmHypervVmcall(unsigned long long GuestRegisters, unsigned long long GuestXmmRegisters);
 
 /**
  * @brief VMFUNC instruction

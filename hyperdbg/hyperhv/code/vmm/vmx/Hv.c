@@ -115,6 +115,16 @@ HvHandleCpuid(VIRTUAL_MACHINE_STATE * VCpu)
             CpuInfo[0] = '0#vH'; // Hv#0
             CpuInfo[1] = CpuInfo[2] = CpuInfo[3] = 0;
         }
+        else if (Regs->rax == HYPERV_CPUID_FEATURES)
+        {
+            //
+            // Hyper-V may have exposed fast XMM hypercalls before HyperDbg
+            // was loaded. Do not advertise them from this layer; the VMCALL
+            // forwarding path still preserves XMM0-XMM5 for already-enabled
+            // callers as required by the TLFS.
+            //
+            CpuInfo[3] &= ~((1UL << 4) | (1UL << 15));
+        }
     }
     else
     {
